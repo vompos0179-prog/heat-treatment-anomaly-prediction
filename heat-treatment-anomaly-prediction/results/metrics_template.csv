@@ -1,0 +1,4 @@
+model,split,precision,recall,f1,roc_auc,pr_auc,notes
+baseline,test,,,,,,
+model_1,test,,,,,,
+model_2,test,,,,,,
