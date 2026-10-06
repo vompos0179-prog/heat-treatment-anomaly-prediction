@@ -348,21 +348,32 @@ git commit -m "docs: 핵심 분석 결과 README 반영"
 
 ## 18. 현재 진행 상태
 
-- [ ] 데이터 구조 확인
-- [ ] 컬럼 의미 정리
-- [ ] 데이터 품질 점검
-- [ ] 정상/이상 정의
-- [ ] 전처리 기준 확정
-- [ ] EDA
-- [ ] 이상 전 변화구간 분석
-- [ ] 주요 변수 선정
-- [ ] 베이스라인 모델
-- [ ] 모델 비교
-- [ ] 오탐/미탐 분석
+- [o] 데이터 구조 확인
+- [o] 컬럼 의미 정리
+- [o] 데이터 품질 점검
+- [o] 정상/이상 정의
+- [o] 전처리 기준 확정
+- [o] EDA
+- [o] 이상 전 변화구간 분석
+- [o] 주요 변수 선정
+- [o] 베이스라인 모델
+- [o] 모델 비교
+- [o] 오탐/미탐 분석
 - [ ] 핵심 시각화 선정
 - [ ] README 최종화
 - [ ] 발표자료 완성
 
 ---
+## 10. 실행 방법
+
+KAMP에서 받은 `data.csv`를 `data/raw/`에 넣은 뒤, 프로젝트 최상위 폴더에서 실행합니다.
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\pip install -r requirements.txt
+
+.\.venv\Scripts\python.exe "stages/1단계_전처리/1단계_전처리_전체실행.py"
+.\.venv\Scripts\python.exe "stages/2단계_평소모습/2단계_평소모습.py"
+```
 
 ### Team Project · Predictive Maintenance / Anomaly Detection
