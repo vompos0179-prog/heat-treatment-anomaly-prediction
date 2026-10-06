@@ -2,7 +2,7 @@
 
 > **열처리 공정 데이터를 활용한 이상 징후 사전 탐지 및 예측 팀 프로젝트**
 
-![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)
 ![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-F37626?logo=jupyter&logoColor=white)
 ![Status](https://img.shields.io/badge/Project-In%20Progress-yellow)
 ![Team](https://img.shields.io/badge/Team-Data%20Analysis-blue)
