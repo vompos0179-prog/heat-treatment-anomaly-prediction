@@ -1,0 +1,36 @@
+# Python / virtual environments
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.env
+.env.*
+.DS_Store
+Thumbs.db
+
+# Raw / generated data
+data/raw/*
+!data/raw/README.md
+data/interim/*
+!data/interim/README.md
+data/processed/*
+!data/processed/README.md
+
+# Large generated outputs
+reports/**
+!reports/README.md
+
+# Internal / local working materials
+team_materials/
+.vscode/
+.claude/
+CLAUDE.md
+AGENTS.md
+PLAN.md
+PLAN-REVIEW-LOG.md
+_GPT용_*
+*.zip
+
+# Office temporary files
+~$*
