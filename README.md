@@ -199,13 +199,16 @@ A1 + Isolation Forest 계산
 ```text
 .
 ├─ README.md
+├─ 실행가이드.md        ← 실행 방법(빠른 확인·전체 재현)
 ├─ requirements.txt
 ├─ data/
 │  └─ raw/
 │     └─ README.md
 ├─ src/
 │  ├─ data_contract.py
-│  └─ project_config.py
+│  ├─ project_config.py
+│  └─ env_check.py
+├─ inputs/              ← XGBoost 품질 예측 입력(작업 요약 캐시)
 ├─ stages/
 │  ├─ 1단계_전처리/
 │  ├─ 2단계_평소모습/
@@ -213,6 +216,7 @@ A1 + Isolation Forest 계산
 │  ├─ 4단계_머신러닝/
 │  ├─ 5단계_평가/
 │  └─ 6단계_품질표기/
+├─ reports/             ← 보고서 숫자를 만든 3~5단계 실행 결과
 ├─ assets/
 │  └─ 핵심 결과 그림
 └─ docs/
@@ -224,6 +228,8 @@ A1 + Isolation Forest 계산
 ---
 
 ## ▶️ 실행 개요
+
+> 📘 **자세한 실행 방법·기대 숫자·재현 확인 기록은 [`실행가이드.md`](실행가이드.md)를 보세요.** 원본을 넣은 뒤 약 2분이면 핵심 결과를 다시 계산해 볼 수 있습니다(실행가이드 3-0).
 
 ### 1. 환경
 
