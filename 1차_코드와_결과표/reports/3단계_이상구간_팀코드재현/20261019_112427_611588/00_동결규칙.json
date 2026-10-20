@@ -1,0 +1,39 @@
+{
+  "resolution": "1 second raw timestamps",
+  "A": "A3: A1 main + A2 comparison",
+  "B": "B1: Jan-Apr baseline / May adjustment / Jun-Jul retrospective follow-up comparison",
+  "C": "C3 + C2 label: freeze rules before follow-up application; Jun-Jul has prior exploratory exposure and is not independent validation",
+  "A1": {
+    "window_sec": 600,
+    "min_history_sec": 300,
+    "center": "past-window median (current point excluded)",
+    "scale": "training-period residual MAD*1.4826",
+    "z_threshold": 4.0,
+    "physical_min_deviation_C": {
+      "소입로 온도 1 Zone": 3.0,
+      "소입로 온도 2 Zone": 3.0,
+      "소입로 온도 3 Zone": 3.0,
+      "소입로 온도 4 Zone": 3.0,
+      "솔트조 온도 1 Zone": 0.3,
+      "솔트조 온도 2 Zone": 0.3
+    },
+    "min_event_duration_sec": 60,
+    "long_gap_reset_sec": 60,
+    "event_continuity_gap_sec": 2
+  },
+  "A2": {
+    "center": "Jan-Apr sensor median",
+    "scale": "Jan-Apr sensor MAD*1.4826",
+    "z_threshold": 4.0,
+    "physical_min_deviation_C": {
+      "소입로 온도 1 Zone": 3.0,
+      "소입로 온도 2 Zone": 3.0,
+      "소입로 온도 3 Zone": 3.0,
+      "소입로 온도 4 Zone": 3.0,
+      "솔트조 온도 1 Zone": 0.3,
+      "솔트조 온도 2 Zone": 0.3
+    },
+    "min_event_duration_sec": 60
+  },
+  "quality_use": "descriptive association only; not anomaly ground truth"
+}
