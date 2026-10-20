@@ -1,0 +1,1 @@
+﻿method,배정번호,period,sensor,start_time,end_time,duration_sec,anomaly_sample_count,max_score,max_abs_deviation,실제길이_sec,제외방법,제외이유,사이에_낀_비후보기록수,threshold,시작온도,종료온도,최소온도,최대온도,구간구분
