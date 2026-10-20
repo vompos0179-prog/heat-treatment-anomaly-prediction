@@ -1,12 +1,12 @@
 # data/raw — 원시 데이터 넣는 곳
 
-원본 데이터 파일은 **제출 폴더에 넣지 않습니다**(과제 가이드: 원본 데이터는 넣지 않고 내려받는 방법만 적음). 실행 전에 아래 파일을 이 폴더에 그대로 넣으세요. 이름을 바꾸거나 내용을 고치지 않습니다.
+원본 데이터 파일은 **이 폴더에 넣지 않았습니다**(과제 가이드: 원본 데이터는 넣지 않고 내려받는 방법만 적음). 재현 확인용으로 저장소에 들어 있는 KAMP 자료는 맨 아래 "저장소에 포함된 KAMP 데이터"에 정리했습니다. 실행 전에 아래 파일을 이 폴더에 그대로 넣으세요. 이름을 바꾸거나 내용을 고치지 않습니다.
 
 ## 출처
 - 데이터셋: **열처리 품질보증 AI 데이터셋** (원본 ZIP 이름 `Dataset_열처리 품질보증 AI 데이터셋.zip`, SHA256 `c86896260f68ed16a5f8b393042e23410663b76821cf2a81ea10e6235c49c1a8`)
 - 내려받는 곳: **https://www.kamp-ai.kr/aidataDetail?DATASET_SEQ=60** (KAMP 인공지능 제조 플랫폼, 이용 목적 선택 후 내려받기)
 - 출처 표기(KAMP 지정 형식): 중소벤처기업부, Korea AI Manufacturing Platform(KAMP), 열처리 품질보증 AI 데이터셋, 스마트제조혁신추진단(수행기관: ㈜임픽스), 2022.12.23., https://www.kamp-ai.kr/aidataDetail?DATASET_SEQ=60
-- 프로젝트 저장소: https://github.com/vompos0179-prog/heat-treatment-anomaly-prediction (원본 데이터 파일은 저장소에 넣지 않음)
+- 프로젝트 저장소: https://github.com/vompos0179-prog/heat-treatment-anomaly-prediction (원본 공정 기록 `data.csv`는 저장소에 넣지 않음)
 - ZIP을 풀면 아래 파일이 나옵니다.
 
 ## 넣을 파일
@@ -20,3 +20,15 @@
 | `데이터설명.txt` | 데이터셋 파일 설명 | 참고 | — |
 
 넣은 뒤 PowerShell에서 `Get-FileHash data\raw\data.csv` 로 SHA256을 확인할 수 있습니다.
+
+## 저장소에 포함된 KAMP 데이터
+
+원본 공정 기록(`data.csv`, 2,939,722행)은 저장소에 넣지 않았습니다. 다만 결과를 다시 확인할 수 있도록 아래 자료가 들어 있습니다. 모두 KAMP 열처리 품질보증 AI 데이터셋에서 나온 자료이며, 이용 조건은 KAMP 데이터셋 페이지를 따릅니다(출처 표기는 위 "출처" 참고).
+
+| 위치 | 내용 | 원본과의 관계 |
+|---|---|---|
+| `inputs/재구축_품질예측/source_train.csv` | 데이터셋의 `train.csv`(108행) | 원본 파일 그대로(XGBoost 재현 검사용) |
+| `inputs/재구축_품질예측/quality_mapping.csv`, `quality_job_features.csv` | `열처리_품질데이터.xlsx` 136행의 값 + 작업별 온도 요약값 | 원본 표의 값 포함 |
+| `inputs/팀원원본/`의 학습용 표 | 작업별 평균·표준편차 요약(136행) | 원본을 가공한 값 |
+| `reports/4단계_참고_Boxplot_IQR_온도이상치/…/02_기록단위_Boxplot이상치.csv` | 박스플롯 기준을 벗어난 기록의 시각·원본 온도값(156,106행) | 원본 기록 일부 |
+| `reports/5단계_평가/…/5-1_주분석/사례0N_…_그래프원본값.csv` | 사례 3개 작업의 짧은 구간 원본 온도(약 1,900행) | 원본 기록 일부 |

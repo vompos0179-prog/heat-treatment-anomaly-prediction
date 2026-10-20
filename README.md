@@ -204,7 +204,7 @@ A1 + Isolation Forest 계산
 ## 📁 공개 저장소 구성
 
 이 GitHub에는 **재현에 필요한 최종 코드와 설명 문서 중심**으로 올립니다.  
-원본 데이터, 대용량 중간 결과, 팀 내부 검토 기록은 포함하지 않습니다.
+원본 공정 기록(`data.csv`), 대용량 중간 결과, 팀 내부 검토 기록은 포함하지 않습니다. 재현 확인용으로 들어 있는 KAMP 자료(`train.csv` 사본·품질표·원본 기록 일부)는 [`data/raw/README.md`](data/raw/README.md)에 정리했습니다.
 
 ```text
 .
@@ -218,7 +218,7 @@ A1 + Isolation Forest 계산
 │  ├─ data_contract.py
 │  ├─ project_config.py
 │  └─ env_check.py
-├─ inputs/              ← XGBoost 품질 예측 입력(작업 요약 캐시)
+├─ inputs/              ← XGBoost 품질 예측 입력(작업 요약 캐시, KAMP train.csv 사본·품질표 포함)
 ├─ stages/
 │  ├─ 1단계_전처리/
 │  ├─ 2단계_평소모습/
@@ -250,7 +250,7 @@ py -3.12 -m venv .venv
 
 ### 2. 데이터
 
-원본 데이터는 GitHub에 포함하지 않습니다.  
+원본 공정 기록(`data.csv`)은 GitHub에 포함하지 않습니다.  
 `data/raw/README.md`의 안내에 따라 원본 파일을 `data/raw/`에 배치합니다.
 
 ### 3. 실행
@@ -313,4 +313,4 @@ py -3.12 -m venv .venv
 중소벤처기업부, Korea AI Manufacturing Platform(KAMP), **열처리 품질보증 AI 데이터셋**, 스마트제조혁신추진단(수행기관: ㈜임픽스), 2022.12.23.  
 https://www.kamp-ai.kr/aidataDetail?DATASET_SEQ=60
 
-> 원본 데이터는 약 540MB이며 KAMP 이용 조건에 따라 GitHub 저장소에는 포함하지 않습니다.
+> 원본 공정 기록(`data.csv`, 약 540MB)은 GitHub 저장소에 포함하지 않습니다. 재현 확인용으로 포함된 KAMP 자료는 [`data/raw/README.md`](data/raw/README.md)를 참고하세요.
