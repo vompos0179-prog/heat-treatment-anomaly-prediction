@@ -7,7 +7,7 @@
 ![pandas](https://img.shields.io/badge/pandas-2.2.3-150458?logo=pandas&logoColor=white)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-1.8.0-F7931E?logo=scikitlearn&logoColor=white)
 ![Method](https://img.shields.io/badge/Method-Robust%20Rule%20%2B%20Isolation%20Forest-6A5ACD)
-![Status](https://img.shields.io/badge/Status-Analysis%20Complete%20%7C%20Docs%20in%20Progress-2E8B57)
+![Status](https://img.shields.io/badge/Status-Analysis%20%26%20Docs%20Complete-2E8B57)
 
 ---
 
@@ -188,6 +188,16 @@ A1 + Isolation Forest 계산
 - 제품/로트 조건
 - 검사 시각과 불량 유형
 - 더 긴 기간의 새로운 데이터
+
+---
+
+## 🖼 대표 그림
+
+| 공정 개요(3D 개념 모델) | A1·IF가 함께 지목한 사례(139417) |
+|---|---|
+| ![공정 개요](assets/01_process_overview_3d.png) | ![공통 사례 139417](assets/03_case_139417_common.png) |
+
+그림 5장 설명: [`assets/`](assets/) · 문제정의서·결과보고서·발표자료 PDF: [`docs/`](docs/)
 
 ---
 
