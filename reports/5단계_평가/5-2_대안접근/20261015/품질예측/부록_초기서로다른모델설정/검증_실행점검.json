@@ -1,0 +1,29 @@
+{
+  "cache_sha256_validated": true,
+  "metrics_rows": 570,
+  "prediction_rows": 38760,
+  "split_rows": 7752,
+  "models": 114,
+  "all_saved_metrics_recomputed_max_error": 2.220446049250313e-16,
+  "disjoint_complete_splits": 57,
+  "train_jobs_observations_crossing_into_june": 0,
+  "reloaded_time_models": [
+    {
+      "model": "온도12",
+      "reload_prediction_max_error": 1.1102230246251565e-16
+    },
+    {
+      "model": "전체36",
+      "reload_prediction_max_error": 1.1102230246251565e-16
+    }
+  ],
+  "output_hashes_checked": 242,
+  "time_training_label_counts": {
+    "0": 72,
+    "1": 28
+  },
+  "time_test_label_counts": {
+    "0": 29,
+    "1": 7
+  }
+}

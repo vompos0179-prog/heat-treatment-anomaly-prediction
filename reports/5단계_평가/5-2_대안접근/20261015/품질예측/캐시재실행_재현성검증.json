@@ -1,0 +1,6 @@
+{
+  "comparison": "First run rebuilt original ZIP vs second run verified cached input, identical temperature model config across all 57 splits",
+  "temperature_prediction_rows": 7752,
+  "max_absolute_probability_difference": 0.0,
+  "exact_equal": true
+}

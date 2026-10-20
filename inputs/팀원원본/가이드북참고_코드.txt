@@ -1,0 +1,446 @@
+%pip -q install xgboost openpyxl
+
+from pathlib import Path
+import numpy as np
+import pandas as pd
+import joblib
+
+from google.colab import drive
+from xgboost import XGBClassifier
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.feature_selection import RFE
+from sklearn.model_selection import train_test_split, GridSearchCV, KFold
+from sklearn.metrics import (
+    classification_report, confusion_matrix,
+    accuracy_score, precision_score, recall_score,
+    f1_score, roc_auc_score
+)
+
+drive.mount("/content/drive")
+
+# =========================================================
+# 1. 파일 경로
+# =========================================================
+BASE = Path("/content/drive/MyDrive/Colab Notebooks")
+PROCESS_FILE = BASE / "data.csv"
+QUALITY_FILE = BASE / "열처리_품질데이터.xlsx"
+
+OUT = BASE / "가이드북실제코드_재현결과"
+OUT.mkdir(exist_ok=True)
+
+for path in [PROCESS_FILE, QUALITY_FILE]:
+    if not path.is_file():
+        raise FileNotFoundError(f"파일이 없습니다: {path}")
+
+# 가이드북에서 사용한 공정 변수
+process_columns = [
+    "건조 1존 OP",
+    "건조 2존 OP",
+    "건조로 온도 1 Zone",
+    "건조로 온도 2 Zone",
+    "세정기",
+    "소입1존 OP",
+    "소입2존 OP",
+    "소입3존 OP",
+    "소입4존 OP",
+    "소입로 CP 값",
+    "소입로 CP 모니터 값",
+    "소입로 온도 1 Zone",
+    "소입로 온도 2 Zone",
+    "소입로 온도 3 Zone",
+    "소입로 온도 4 Zone",
+    "솔트 컨베이어 온도 1 Zone",
+    "솔트 컨베이어 온도 2 Zone",
+    "솔트조 온도 1 Zone",
+    "솔트조 온도 2 Zone",
+]
+
+# =========================================================
+# 2. 원본 데이터 읽기
+# 인코딩 확인은 파일을 읽기 위한 호환 처리입니다.
+# =========================================================
+encoding = None
+
+for candidate in ["utf-8-sig", "cp949", "euc-kr"]:
+    try:
+        pd.read_csv(PROCESS_FILE, encoding=candidate, nrows=1000)
+        encoding = candidate
+        break
+    except UnicodeDecodeError:
+        pass
+
+if encoding is None:
+    raise ValueError("CSV 인코딩을 확인해 주세요.")
+
+required = ["TAG_MIN", "배정번호"] + process_columns
+
+# 계산에 사용하는 열만 읽어 메모리 사용량을 줄입니다.
+df = pd.read_csv(
+    PROCESS_FILE,
+    encoding=encoding,
+    usecols=required
+)
+
+print("원본 공정 데이터:", len(df), "행")
+
+# =========================================================
+# 3. 시간 형식 변환
+# =========================================================
+df["TAG_MIN"] = pd.to_datetime(
+    df["TAG_MIN"],
+    format="%Y-%m-%d %H:%M:%S"
+)
+
+# =========================================================
+# 4. 결측값: 열별 전체 평균으로 대체
+# 숫자형 열에만 적용하도록 최신 pandas 문법으로 작성
+# =========================================================
+print("평균 대체 전 결측값:")
+print(df.isnull().sum())
+
+numeric_columns = df.select_dtypes(include="number").columns
+df[numeric_columns] = df[numeric_columns].fillna(
+    df[numeric_columns].mean()
+)
+
+print("\n평균 대체 후 결측값:")
+print(df.isnull().sum())
+
+# 가이드북의 고유값 개수 확인
+# 가이드북에서는 이 단계에서 제거한 변수가 없습니다.
+print("\n변수별 고유값 개수:")
+for col in df.columns:
+    print(col, ":", len(df[col].value_counts()))
+
+# =========================================================
+# 5. 가이드북에서 중복 정보로 판단한 변수 제거
+# =========================================================
+df.drop(
+    ["소입로 CP 모니터 값"],
+    axis=1,
+    inplace=True
+)
+
+used_columns = [
+    col for col in process_columns
+    if col != "소입로 CP 모니터 값"
+]
+
+# =========================================================
+# 6. 배정번호별 평균·표준편차
+# 날짜 열은 모델 입력이 아니므로 집계에서 제외
+# =========================================================
+df_stat = df.groupby("배정번호")[used_columns].agg(["mean", "std"])
+
+chg_name = {"mean": "_Avg", "std": "_Std"}
+df_stat.columns = [
+    col + chg_name[stat]
+    for col, stat in df_stat.columns
+]
+df_stat.reset_index(drop=False, inplace=True)
+
+del df
+
+# =========================================================
+# 7. 품질 데이터 읽기 및 병합
+# =========================================================
+heat_result = pd.read_excel(QUALITY_FILE)
+
+heat_result.drop(
+    ["작업일", "공정명", "설비명", "양품수량"],
+    axis=1,
+    inplace=True
+)
+
+df_total = pd.merge(
+    heat_result,
+    df_stat,
+    on="배정번호",
+    how="left"
+)
+
+# =========================================================
+# 8. 불량률 및 안정·위험 라벨
+# =========================================================
+df_total["불량률"] = round(
+    df_total["불량수량"] / df_total["총수량"] * 100,
+    3
+)
+
+print("\n불량률 통계:")
+print(df_total["불량률"].describe())
+
+df_total.loc[
+    df_total["불량률"] >= 0.046, "불량단계"
+] = "위험"
+
+df_total.loc[
+    df_total["불량률"] < 0.046, "불량단계"
+] = "안정"
+
+print("\n안정·위험 분포:")
+print(df_total["불량단계"].value_counts())
+
+df_total.drop(
+    ["배정번호", "불량수량", "총수량", "불량률"],
+    axis=1,
+    inplace=True
+)
+
+# =========================================================
+# 9. 전체 입력 변수 36개 및 정답
+# =========================================================
+features = [
+    f"{col}_{stat}"
+    for col in used_columns
+    for stat in ["Avg", "Std"]
+]
+
+X_num = df_total[features]
+y = df_total["불량단계"]
+
+# 재현 과정에서 임의로 행을 삭제하지 않고 오류를 확인
+if X_num.isna().any().any() or y.isna().any():
+    raise ValueError(
+        "병합 결과에 결측값이 있습니다. 배정번호 연결 등을 확인하세요."
+    )
+
+le = LabelEncoder()
+y = le.fit_transform(y)
+
+print("\n라벨 순서:", le.classes_)
+print("전체 데이터:", len(X_num), "행")
+print("입력 변수:", len(features), "개")
+
+# 전처리 결과 파일 하나 저장
+preprocessed = X_num.copy()
+preprocessed["불량단계"] = le.inverse_transform(y)
+preprocessed.to_csv(
+    OUT / "전처리_학습용데이터.csv",
+    index=False,
+    encoding="utf-8-sig"
+)
+
+# =========================================================
+# 10. 첫 번째 분리: random_state=1
+# RFE용 분리
+# =========================================================
+X_train_select, X_test_select, y_train_select, y_test_select = (
+    train_test_split(
+        X_num,
+        y,
+        test_size=0.2,
+        random_state=1
+    )
+)
+
+# 가이드북처럼 표준화 데이터를 생성
+# 이후 RFE에는 표준화 전 X_train_select 사용
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train_select)
+X_test_scaled = scaler.transform(X_test_select)
+
+# =========================================================
+# 11. RFE: 12개 선택, 단계마다 10개 제거
+# =========================================================
+rfe_selector = RFE(
+    estimator=XGBClassifier(eval_metric="error"),
+    n_features_to_select=12,
+    step=10,
+    verbose=5
+)
+
+rfe_selector.fit(X_train_select, y_train_select)
+
+rfe_support = rfe_selector.get_support()
+rfe_feature = X_num.loc[:, rfe_support].columns.tolist()
+
+print("\n현재 실행에서 RFE가 선택한 변수:")
+print(rfe_feature)
+
+# 가이드북에 인쇄된 최종 변수 목록
+final_X = df_total[[
+    "건조 1존 OP_Std",
+    "건조로 온도 1 Zone_Std",
+    "소입1존 OP_Avg",
+    "소입1존 OP_Std",
+    "소입2존 OP_Avg",
+    "소입로 CP 값_Avg",
+    "소입로 온도 1 Zone_Avg",
+    "소입로 온도 4 Zone_Std",
+    "솔트 컨베이어 온도 1 Zone_Std",
+    "솔트 컨베이어 온도 2 Zone_Avg",
+    "솔트 컨베이어 온도 2 Zone_Std",
+    "솔트조 온도 1 Zone_Avg",
+]]
+
+# =========================================================
+# 12. 최종 분리: random_state=2
+# 가이드북 실제 코드처럼 final_X 대신 X_num 사용
+# =========================================================
+X_train, X_test, y_train, y_test = train_test_split(
+    X_num,
+    y,
+    test_size=0.2,
+    random_state=2
+)
+
+# 가이드북처럼 다시 표준화 데이터를 생성
+# 실제 GridSearchCV에는 표준화 전 X_train 사용
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+print("\n최종 학습 행:", len(X_train))
+print("최종 평가 행:", len(X_test))
+print("실제 학습 입력 변수:", X_train.shape[1], "개")
+
+# =========================================================
+# 13. GridSearchCV: 가이드북 실제 설정
+# scoring 생략 → 기본 정확도로 최적 설정 선택
+# =========================================================
+kfold = KFold(
+    n_splits=5,
+    shuffle=True,
+    random_state=1
+)
+
+parameters_xc = {
+    "n_estimators": [20, 50, 100, 150, 200, 250, 300],
+    "learning_rate": [0.001, 0.05, 0.1, 0.15, 0.2],
+    "max_depth": [2, 4, 6, 8, 10, 12, 14, 16],
+}
+
+model_xc = GridSearchCV(
+    XGBClassifier(eval_metric="error"),
+    parameters_xc,
+    cv=kfold,
+    verbose=1,
+    n_jobs=-1
+)
+
+model_xc.fit(X_train, y_train)
+
+print("\nXGBoost best 파라미터:")
+print(model_xc.best_params_)
+
+best_model_xc = model_xc.best_estimator_
+best_model_xc.fit(X_train, y_train)
+
+# =========================================================
+# 14. 예측·평가
+# =========================================================
+y_pred_xc = best_model_xc.predict(X_test)
+y_prob_xc = best_model_xc.predict_proba(X_test)[:, 1]
+
+score_xc = f1_score(
+    y_test,
+    y_pred_xc,
+    average="macro"
+)
+
+print("\n불량탐지 XGBOOST macro F1:", score_xc)
+
+report = classification_report(
+    y_test,
+    y_pred_xc,
+    labels=[0, 1],
+    target_names=["안정", "위험"],
+    digits=3,
+    zero_division=0
+)
+print("\n", report)
+
+cm = confusion_matrix(
+    y_test,
+    y_pred_xc,
+    labels=[0, 1]
+)
+
+display(pd.DataFrame(
+    cm,
+    index=["실제 안정", "실제 위험"],
+    columns=["예측 안정", "예측 위험"]
+))
+
+# =========================================================
+# 15. 결과 저장: 이 부분만 가이드북에 추가
+# =========================================================
+tn, fp, fn, tp = cm.ravel()
+
+performance = pd.DataFrame([
+    ["전체 데이터 수", len(X_num)],
+    ["학습 데이터 수", len(X_train)],
+    ["평가 데이터 수", len(X_test)],
+    ["모델 입력 변수 수", X_train.shape[1]],
+    ["정확도", accuracy_score(y_test, y_pred_xc)],
+    ["위험 정밀도", precision_score(
+        y_test, y_pred_xc, zero_division=0
+    )],
+    ["위험 재현율", recall_score(
+        y_test, y_pred_xc, zero_division=0
+    )],
+    ["위험 F1", f1_score(
+        y_test, y_pred_xc, zero_division=0
+    )],
+    ["macro F1", score_xc],
+    ["ROC-AUC", roc_auc_score(y_test, y_prob_xc)
+     if len(np.unique(y_test)) == 2 else np.nan],
+    ["TN", tn],
+    ["FP", fp],
+    ["FN", fn],
+    ["TP", tp],
+], columns=["평가항목", "결과값"])
+
+performance.to_csv(
+    OUT / "XGBoost_모델성능결과.csv",
+    index=False,
+    encoding="utf-8-sig"
+)
+
+comparison = pd.DataFrame({
+    "원본 행 번호": X_test.index,
+    "실제": le.inverse_transform(y_test),
+    "예측": le.inverse_transform(y_pred_xc),
+    "위험 예측確率": y_prob_xc,
+})
+comparison = comparison.rename(
+    columns={"위험 예측確率": "위험 예측 확률"}
+)
+comparison.to_csv(
+    OUT / "XGBoost_실제예측비교.csv",
+    index=False,
+    encoding="utf-8-sig"
+)
+
+# 모델은 표준화 전 36개 변수를 입력받습니다.
+best_model_xc.save_model(
+    str(OUT / "XGBoost_모델.json")
+)
+
+joblib.dump(
+    {
+        "model": best_model_xc,
+        "features": features,
+        "label_encoder": le,
+    },
+    OUT / "XGBoost_입력정보포함모델.joblib"
+)
+
+pd.DataFrame(model_xc.cv_results_).to_csv(
+    OUT / "XGBoost_튜닝결과.csv",
+    index=False,
+    encoding="utf-8-sig"
+)
+
+(OUT / "XGBoost_실행요약.txt").write_text(
+    f"최적 설정: {model_xc.best_params_}\n"
+    f"교차검증 최고 정확도: {model_xc.best_score_:.6f}\n"
+    f"RFE 선택 변수: {rfe_feature}\n"
+    f"실제 모델 입력 변수: {features}\n\n"
+    f"{report}",
+    encoding="utf-8"
+)
+
+display(performance)
+print("\n저장 위치:", OUT)

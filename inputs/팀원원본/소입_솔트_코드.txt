@@ -1,0 +1,219 @@
+# 1. 패키지 설치
+%pip -q install xgboost
+
+# 2. 라이브러리 및 구글 드라이브 연결
+from pathlib import Path
+import numpy as np
+import pandas as pd
+
+from google.colab import drive
+from xgboost import XGBClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    roc_auc_score,
+)
+
+drive.mount("/content/drive")
+
+# 3. 전처리된 데이터 불러오기
+FILE = Path(
+    "/content/drive/MyDrive/Colab Notebooks/온도전처리_결과/"
+    "04_학습용_온도입력_품질정답.csv"
+)
+
+if not FILE.is_file():
+    raise FileNotFoundError(f"파일을 찾을 수 없습니다:\n{FILE}")
+
+df = pd.read_csv(FILE, encoding="utf-8-sig")
+
+# 4. 입력: 소입로·솔트조 온도의 평균·표준편차 12개
+temperature_columns = [
+    "소입로 온도 1 Zone",
+    "소입로 온도 2 Zone",
+    "소입로 온도 3 Zone",
+    "소입로 온도 4 Zone",
+    "솔트조 온도 1 Zone",
+    "솔트조 온도 2 Zone",
+]
+
+features = [
+    f"{column}_{stat}"
+    for column in temperature_columns
+    for stat in ["Avg", "Std"]
+]
+
+required = features + ["위험여부"]
+missing = [column for column in required if column not in df.columns]
+
+if missing:
+    raise ValueError(f"필요한 열이 없습니다: {missing}")
+
+data = df[required].apply(pd.to_numeric, errors="coerce")
+data = data.replace([np.inf, -np.inf], np.nan)
+
+if data.isna().any().any():
+    raise ValueError("전처리 파일에 결측값 또는 숫자가 아닌 값이 있습니다.")
+
+if not data["위험여부"].isin([0, 1]).all():
+    raise ValueError("위험여부는 안정=0, 위험=1이어야 합니다.")
+
+X = data[features]
+y = data["위험여부"].astype(int)
+
+counts = y.value_counts()
+if len(counts) != 2 or counts.min() < 2:
+    raise ValueError("안정·위험 데이터가 각각 최소 2행 이상 필요합니다.")
+
+print(f"전체 데이터: {len(data)}행")
+print(f"입력 변수: {len(features)}개")
+print("정답 분포: 안정=0, 위험=1")
+print(counts.sort_index())
+
+# 5. 학습 80%, 평가 20% 분리
+# 안정·위험 비율을 유지하도록 stratify 적용
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=1,
+    stratify=y,
+)
+
+print(f"\n학습 데이터: {len(X_train)}행")
+print(f"평가 데이터: {len(X_test)}행")
+
+# 6. XGBoost 분류 모델
+# 온도 평균·표준편차를 그대로 입력합니다.
+# 트리 기반 모델이므로 표준화는 필수 사항이 아닙니다.
+model = XGBClassifier(
+    objective="binary:logistic",
+    n_estimators=100,
+    max_depth=3,
+    learning_rate=0.05,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    eval_metric="logloss",
+    tree_method="hist",
+    random_state=1,
+    n_jobs=2,
+)
+
+# 평가 데이터는 학습에 사용하지 않습니다.
+model.fit(X_train, y_train)
+
+# 7. 평가 데이터 예측
+y_pred = model.predict(X_test)
+y_probability = model.predict_proba(X_test)[:, 1]
+
+# 8. 성능 출력
+print("\n========== 평가 결과 ==========")
+print(f"정확도: {accuracy_score(y_test, y_pred):.3f}")
+
+print("\n분류 성능")
+print(
+    classification_report(
+        y_test,
+        y_pred,
+        labels=[0, 1],
+        target_names=["안정", "위험"],
+        digits=3,
+        zero_division=0,
+    )
+)
+
+print("혼동행렬: 행=실제, 열=예측")
+display(
+    pd.DataFrame(
+        confusion_matrix(y_test, y_pred, labels=[0, 1]),
+        index=["실제 안정", "실제 위험"],
+        columns=["예측 안정", "예측 위험"],
+    )
+)
+
+if y_test.nunique() == 2:
+    print(f"ROC-AUC: {roc_auc_score(y_test, y_probability):.3f}")
+
+# 9. 변수 중요도
+importance = pd.DataFrame({
+    "변수": features,
+    "중요도": model.feature_importances_,
+}).sort_values("중요도", ascending=False)
+
+print("\n========== 변수 중요도 ==========")
+display(importance.reset_index(drop=True))
+
+# 10. 실제 정답과 예측 비교
+comparison = pd.DataFrame({
+    "원본 행 번호": X_test.index,
+    "실제": y_test.map({0: "안정", 1: "위험"}).to_numpy(),
+    "예측": pd.Series(y_pred).map({0: "안정", 1: "위험"}).to_numpy(),
+    "위험 예측 확률": y_probability.round(3),
+})
+
+print("\n========== 실제·예측 비교 ==========")
+display(comparison.reset_index(drop=True))
+
+# 전처리 파일과 같은 폴더에 결과 저장
+OUT = FILE.parent
+
+importance.to_csv(
+    OUT / "XGBoost_변수중요도.csv",
+    index=False,
+    encoding="utf-8-sig",
+)
+
+comparison.to_csv(
+    OUT / "XGBoost_실제예측비교.csv",
+    index=False,
+    encoding="utf-8-sig",
+)
+
+print("저장 위치:", OUT)
+
+# 학습된 XGBoost 모델 저장
+MODEL_PATH = FILE.parent / "XGBoost_온도품질모델.json"
+model.save_model(str(MODEL_PATH))
+
+print("모델 저장 위치:", MODEL_PATH)
+
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score,
+    f1_score, roc_auc_score, confusion_matrix
+)
+
+tn, fp, fn, tp = confusion_matrix(
+    y_test, y_pred, labels=[0, 1]
+).ravel()
+
+performance = pd.DataFrame([
+    ["전체 데이터 수", len(X)],
+    ["학습 데이터 수", len(X_train)],
+    ["평가 데이터 수", len(X_test)],
+    ["정확도 Accuracy", accuracy_score(y_test, y_pred)],
+    ["위험 정밀도 Precision",
+     precision_score(y_test, y_pred, zero_division=0)],
+    ["위험 재현율 Recall",
+     recall_score(y_test, y_pred, zero_division=0)],
+    ["위험 F1-score",
+     f1_score(y_test, y_pred, zero_division=0)],
+    ["ROC-AUC",
+     roc_auc_score(y_test, y_probability)
+     if y_test.nunique() == 2 else np.nan],
+    ["실제 안정 → 예측 안정 TN", tn],
+    ["실제 안정 → 예측 위험 FP", fp],
+    ["실제 위험 → 예측 안정 FN", fn],
+    ["실제 위험 → 예측 위험 TP", tp],
+], columns=["평가항목", "결과값"])
+
+RESULT_PATH = FILE.parent / "XGBoost_모델성능결과.csv"
+performance.to_csv(
+    RESULT_PATH,
+    index=False,
+    encoding="utf-8-sig"
+)
+
+display(performance)
+print("성능 결과 저장 위치:", RESULT_PATH)

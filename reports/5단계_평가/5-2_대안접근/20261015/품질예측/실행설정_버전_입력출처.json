@@ -1,0 +1,198 @@
+{
+  "input_origin": "sha256_verified_cached_136_job_features",
+  "cache_manifest_sha256": "4b2cae9d0f71c4b9ae43c37dad77062e0a4d28e0e6d8021b3471f51600962410",
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.3.5",
+    "pandas": "3.0.1",
+    "scipy": "1.18.1",
+    "sklearn": "1.9.1",
+    "xgboost": "3.4.1"
+  },
+  "target": "raw_ppm >= 450; no rounding",
+  "positive_label": 1,
+  "negative_label": 0,
+  "probability_threshold": 0.5,
+  "predicted_risk_rule": "P(risk)>0.5; exact 0.5 is stable, matching XGBClassifier.predict",
+  "base_parameters": {
+    "objective": "binary:logistic",
+    "eval_metric": "logloss",
+    "tree_method": "hist",
+    "n_jobs": 2,
+    "reg_alpha": 0.0,
+    "reg_lambda": 1.0,
+    "min_child_weight": 1.0,
+    "gamma": 0.0,
+    "max_delta_step": 0.0,
+    "colsample_bylevel": 1.0,
+    "colsample_bynode": 1.0,
+    "scale_pos_weight": 1.0,
+    "max_bin": 256,
+    "grow_policy": "depthwise"
+  },
+  "model_configs": {
+    "온도12": {
+      "n_estimators": 100,
+      "max_depth": 3,
+      "learning_rate": 0.05,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8
+    },
+    "전체36": {
+      "n_estimators": 100,
+      "max_depth": 3,
+      "learning_rate": 0.05,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8
+    }
+  },
+  "base_seed": 20261015,
+  "comparison_config_note": "Both feature sets use the original temperature-code explicit parameters (100 trees, depth 3, learning_rate .05, subsample .8, colsample .8). Shared settings were chosen for a controlled input-set comparison, not selected by June-July scores. This does not recover or claim the original full36 tuning parameters.",
+  "ap_definition": "sklearn.average_precision_score; Average Precision, not trapezoidal PR-AUC",
+  "exclusions": 0,
+  "class_counts": {
+    "0": 101,
+    "1": 35
+  },
+  "data_meta": {
+    "schema_version": 1,
+    "source_zip_name": "Dataset_열처리 품질보증 AI 데이터셋.zip",
+    "source_zip_sha256": "c86896260f68ed16a5f8b393042e23410663b76821cf2a81ea10e6235c49c1a8",
+    "source_members": [
+      "data/data.csv",
+      "data/열처리_품질데이터.xlsx",
+      "data/train.csv"
+    ],
+    "raw_process_rows": 2939722,
+    "raw_process_jobs": 136,
+    "quality_jobs": 136,
+    "quality_duplicate_ids": 0,
+    "unmatched_quality_jobs": 0,
+    "raw_jobs_without_quality": [],
+    "analyzed_jobs": 136,
+    "excluded_jobs": 0,
+    "raw_rows_with_any_feature_missing": 4677,
+    "raw_rows_with_any_temperature_missing": 412,
+    "missing_policy": "No imputation. Per-job columnwise observed mean and sample std (ddof=1); any remaining NaN is handled by XGBoost trained missing routing.",
+    "target": "unrounded defects / total * 1,000,000 >= 450",
+    "target_counts": {
+      "0": 101,
+      "1": 35
+    },
+    "labels_different_from_old_round_percent_rule": 0,
+    "month_counts": {
+      "1": 14,
+      "2": 8,
+      "3": 22,
+      "4": 34,
+      "5": 22,
+      "6": 22,
+      "7": 14
+    },
+    "missing_aggregate_cells": 0,
+    "feature_names": [
+      "건조 1존 OP_Avg",
+      "건조 1존 OP_Std",
+      "건조 2존 OP_Avg",
+      "건조 2존 OP_Std",
+      "건조로 온도 1 Zone_Avg",
+      "건조로 온도 1 Zone_Std",
+      "건조로 온도 2 Zone_Avg",
+      "건조로 온도 2 Zone_Std",
+      "세정기_Avg",
+      "세정기_Std",
+      "소입1존 OP_Avg",
+      "소입1존 OP_Std",
+      "소입2존 OP_Avg",
+      "소입2존 OP_Std",
+      "소입3존 OP_Avg",
+      "소입3존 OP_Std",
+      "소입4존 OP_Avg",
+      "소입4존 OP_Std",
+      "소입로 CP 값_Avg",
+      "소입로 CP 값_Std",
+      "소입로 온도 1 Zone_Avg",
+      "소입로 온도 1 Zone_Std",
+      "소입로 온도 2 Zone_Avg",
+      "소입로 온도 2 Zone_Std",
+      "소입로 온도 3 Zone_Avg",
+      "소입로 온도 3 Zone_Std",
+      "소입로 온도 4 Zone_Avg",
+      "소입로 온도 4 Zone_Std",
+      "솔트 컨베이어 온도 1 Zone_Avg",
+      "솔트 컨베이어 온도 1 Zone_Std",
+      "솔트 컨베이어 온도 2 Zone_Avg",
+      "솔트 컨베이어 온도 2 Zone_Std",
+      "솔트조 온도 1 Zone_Avg",
+      "솔트조 온도 1 Zone_Std",
+      "솔트조 온도 2 Zone_Avg",
+      "솔트조 온도 2 Zone_Std"
+    ],
+    "source_train_rows": 108,
+    "source_train_vs_old_imputed_max_abs_error": 1.345550060261047e-11,
+    "preprocessing_comparisons": [
+      {
+        "비교파일": "04_학습용_온도입력_품질정답.csv",
+        "재구축방법": "유효관측별_집계",
+        "비교변수수": 12,
+        "최대절대오차": 0.010855557067796617,
+        "모든변수일치작업수": 26,
+        "허용절대오차": 1e-07
+      },
+      {
+        "비교파일": "04_학습용_온도입력_품질정답.csv",
+        "재구축방법": "전체평균_사전대체_감사용",
+        "비교변수수": 12,
+        "최대절대오차": 0.05749483473230654,
+        "모든변수일치작업수": 25,
+        "허용절대오차": 1e-07
+      },
+      {
+        "비교파일": "04_학습용_온도입력_품질정답.csv",
+        "재구축방법": "온도6개_완전관측행",
+        "비교변수수": 12,
+        "최대절대오차": 1.340705324537339e-12,
+        "모든변수일치작업수": 136,
+        "허용절대오차": 1e-07
+      },
+      {
+        "비교파일": "전처리_학습용데이터.csv",
+        "재구축방법": "유효관측별_집계",
+        "비교변수수": 36,
+        "최대절대오차": 1.3726089343586985,
+        "모든변수일치작업수": 8,
+        "허용절대오차": 1e-07
+      },
+      {
+        "비교파일": "전처리_학습용데이터.csv",
+        "재구축방법": "전체평균_사전대체_감사용",
+        "비교변수수": 36,
+        "최대절대오차": 2.1822543772032077e-12,
+        "모든변수일치작업수": 136,
+        "허용절대오차": 1e-07
+      },
+      {
+        "비교파일": "전처리_학습용데이터.csv",
+        "재구축방법": "온도6개_완전관측행",
+        "비교변수수": 12,
+        "최대절대오차": 0.05749483473237406,
+        "모든변수일치작업수": 25,
+        "허용절대오차": 1e-07
+      }
+    ],
+    "cache_sha256": {
+      "missing_observations.csv": "ed7a64de75082f4a44a108f60fcd9c281eef65477446c7125dd2aa6001c910d4",
+      "quality_job_features.csv": "421b0fbee27977854b16f30d830c860726044fca894997520af8e7219428ac7c",
+      "quality_mapping.csv": "13a83f909787beb521fdb3f4563b542a0cc2257898f6c6e44aab38498d88db04",
+      "source_train.csv": "7883d5f1e78dc798c1ae439c23f27c8b37df3cacf7ad0f00af2eca45f1f78fcb",
+      "source_train_mapping.csv": "61200fa5b326e0712c0cd178469eb3cb3298542a85aadaca9e1c169d3aad2553",
+      "valid_observation_counts.csv": "3937e509fb505a6a633ceb89cd209b7884dc0da146cf4ad31d7dba1970356ac2"
+    }
+  },
+  "source_train_same_indices_as_seed2": true,
+  "source_train_same_order_as_seed2": true,
+  "evaluation_runs": 57,
+  "saved_models": 114,
+  "charts": "saved: 시간평가_ROC_PR.png, 시간평가_혼동행렬.png",
+  "time_evaluation_role": "Retrospective temporal comparison of previously accessed historical data, not an untouched independent final test. The initial unequal-settings comparison is preserved separately; the protocol was corrected to equal settings for input-set comparability, not optimized against June-July scores."
+}

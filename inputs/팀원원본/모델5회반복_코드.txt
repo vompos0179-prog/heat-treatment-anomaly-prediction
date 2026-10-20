@@ -1,0 +1,166 @@
+%pip -q install xgboost
+
+from pathlib import Path
+import numpy as np
+import pandas as pd
+
+from google.colab import drive
+from xgboost import XGBClassifier
+from sklearn.base import clone
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score,
+    f1_score, roc_auc_score
+)
+
+drive.mount("/content/drive")
+
+# =========================================================
+# 1. 이미지에서 확인한 정확한 경로
+# =========================================================
+BASE = Path("/content/drive/MyDrive/Colab Notebooks")
+
+TEMP_DIR = BASE / "소입로_솔트조만 사용한 모델 결과"
+GUIDE_DIR = BASE / "가이드북실제코드_재현결과"
+
+TEMP_DATA = TEMP_DIR / "04_학습용_온도입력_품질정답.csv"
+TEMP_MODEL = TEMP_DIR / "XGBoost_온도품질모델.json"
+
+GUIDE_DATA = GUIDE_DIR / "전처리_학습용데이터.csv"
+GUIDE_MODEL = GUIDE_DIR / "XGBoost_모델.json"
+
+OUT = BASE / "XGBoost_5회평균결과"
+OUT.mkdir(exist_ok=True)
+
+for path in [TEMP_DATA, TEMP_MODEL, GUIDE_DATA, GUIDE_MODEL]:
+    if not path.is_file():
+        raise FileNotFoundError(f"파일이 없습니다:\n{path}")
+
+# =========================================================
+# 2. 전처리 데이터와 모델 불러오기
+# =========================================================
+temp = pd.read_csv(TEMP_DATA, encoding="utf-8-sig")
+guide = pd.read_csv(GUIDE_DATA, encoding="utf-8-sig")
+
+temp_model = XGBClassifier()
+temp_model.load_model(str(TEMP_MODEL))
+
+guide_model = XGBClassifier()
+guide_model.load_model(str(GUIDE_MODEL))
+
+temp_features = temp_model.get_booster().feature_names
+guide_features = guide_model.get_booster().feature_names
+
+if temp_features is None or guide_features is None:
+    raise ValueError("모델에 입력 변수 이름이 없습니다.")
+
+X_temp = temp[temp_features].apply(pd.to_numeric, errors="raise")
+X_guide = guide[guide_features].apply(pd.to_numeric, errors="raise")
+
+y_temp = pd.to_numeric(temp["위험여부"], errors="raise")
+y_guide = guide["불량단계"].map({"안정": 0, "위험": 1})
+
+for name, X, y in [
+    ("온도 모델", X_temp, y_temp),
+    ("가이드북 모델", X_guide, y_guide),
+]:
+    if not np.isfinite(X.to_numpy()).all():
+        raise ValueError(f"{name}: 입력에 결측값 또는 무한값이 있습니다.")
+    if y.isna().any() or not y.isin([0, 1]).all():
+        raise ValueError(f"{name}: 정답을 확인해 주세요.")
+
+# 두 CSV는 같은 품질 파일의 순서로 생성되었다는 전제입니다.
+# 배정번호가 제거된 파일이므로 정답 순서와 행 수를 확인합니다.
+if len(temp) != len(guide):
+    raise ValueError("두 데이터의 행 수가 다릅니다.")
+
+if not np.array_equal(y_temp.to_numpy(), y_guide.to_numpy()):
+    raise ValueError("두 데이터의 정답 순서가 다릅니다.")
+
+y = y_temp.astype(int).to_numpy()
+counts = pd.Series(y).value_counts()
+
+if len(counts) != 2 or counts.min() < 2:
+    raise ValueError("안정·위험 데이터가 각각 최소 2행 필요합니다.")
+
+# =========================================================
+# 3. 각각 5회 재학습
+# 두 모델 모두 매회 동일한 학습·평가 행 사용
+# =========================================================
+records = []
+indices = np.arange(len(y))
+
+models = [
+    ("소입로·솔트조 온도 모델", temp_model, X_temp),
+    ("가이드북 전체 변수 모델", guide_model, X_guide),
+]
+
+for seed in [11, 22, 33, 44, 55]:
+    train_idx, test_idx = train_test_split(
+        indices,
+        test_size=0.2,
+        random_state=seed,
+        stratify=y
+    )
+
+    for name, saved_model, X in models:
+        model = clone(saved_model)
+
+        # 실제 저장된 모델의 트리 수 유지
+        model.set_params(
+            n_estimators=saved_model.get_booster().num_boosted_rounds(),
+            random_state=seed,
+            n_jobs=2
+        )
+
+        model.fit(X.iloc[train_idx], y[train_idx])
+
+        actual = y[test_idx]
+        predicted = model.predict(X.iloc[test_idx])
+        probability = model.predict_proba(X.iloc[test_idx])[:, 1]
+
+        records.append({
+            "모델": name,
+            "정확도": accuracy_score(actual, predicted),
+            "위험 정밀도": precision_score(
+                actual, predicted, zero_division=0
+            ),
+            "위험 재현율": recall_score(
+                actual, predicted, zero_division=0
+            ),
+            "위험 F1": f1_score(
+                actual, predicted, zero_division=0
+            ),
+            "macro F1": f1_score(
+                actual, predicted,
+                average="macro", zero_division=0
+            ),
+            "ROC-AUC": roc_auc_score(actual, probability),
+        })
+
+# =========================================================
+# 4. 평균값만 출력·저장
+# =========================================================
+metrics = [
+    "정확도", "위험 정밀도", "위험 재현율",
+    "위험 F1", "macro F1", "ROC-AUC"
+]
+
+average = (
+    pd.DataFrame(records)
+    .groupby("모델", sort=False)[metrics]
+    .mean()
+    .reset_index()
+)
+
+print("각 모델 5회 재학습 평균 — 0~1 단위")
+display(average.round(4))
+
+RESULT_FILE = OUT / "두모델_5회평균성능.csv"
+average.to_csv(
+    RESULT_FILE,
+    index=False,
+    encoding="utf-8-sig"
+)
+
+print("저장 위치:", RESULT_FILE)

@@ -1,0 +1,42 @@
+{
+  "mode": "production",
+  "production_result": true,
+  "comparison_available": true,
+  "common_records": 770509,
+  "raw_records": 781388,
+  "excluded_records": 10879,
+  "jobs": 36,
+  "counts": {
+    "A1": 590,
+    "A2": 7215,
+    "IF": 828,
+    "IQR_all": 33257,
+    "IQR_qualified": 26536
+  },
+  "iqr_qualified_records": 26536,
+  "iqr_equipment_intervals": 64,
+  "iqr_sensor_intervals": 106,
+  "iqr_original_equipment_intervals": 64,
+  "iqr_original_sensor_intervals": 107,
+  "iqr_original_candidate_records_sensor_sum": 44658,
+  "equipment_intervals": {
+    "A1": 6,
+    "A2": 33,
+    "IF": 5
+  },
+  "equipment_interval_source": "reports\\4단계_머신러닝\\20261019_115740_575524\\21_설비단위_방법별구간.csv",
+  "iqr_overlap_equipment_intervals": {
+    "A1": 2,
+    "A2": 0,
+    "IF": 1
+  },
+  "checks": {
+    "all_iqr_timestamps_mapped": true,
+    "common_scope": "A1·A2·IF의 두 센서 valid 모두의 교집합",
+    "if_source": "최신 4단계(300개 조건)의 저장된 IF_valid·IF_qual",
+    "invalid_excluded_from_numerator_and_denominator": true,
+    "duration_rule": "원래 60초 선정 유지. 공통 범위 제한 후 재선정하지 않음"
+  },
+  "interpretation": "IQR은 대안적 기술통계 비교이며 실제 고장 정답·정확도가 아님",
+  "quality_xgboost_rerun": false
+}
